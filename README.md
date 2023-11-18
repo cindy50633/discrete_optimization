@@ -1,2 +1,2 @@
 # discrete_optimization
-coursera assignment source codes
+coursera discrete_optimization's open assignment
