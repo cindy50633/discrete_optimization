@@ -24,41 +24,59 @@
 # THE SOFTWARE.
 
 
-import sys
+# import sys
 
 from collections import namedtuple
 
-Set = namedtuple("Set", ['index', 'cost', 'items'])
+MySet = namedtuple("MySet", ['index', 'cost', 'items'])
+
+
+def convert_to_candidate_set_dict(lines):
+    # first line structure:
+    # number_of_item number_of_set
+    set_count = int(lines[0].split()[1])
+
+    set_dict: dict[int, MySet] = {}
+    for i in range(1, set_count+1):
+        parts = lines[i].split()
+        curr_index = i - 1
+        set_dict[curr_index] = \
+            MySet(curr_index, float(parts[0]), [int(i) for i in parts[1:]])
+    return set_dict
+
+
+def greedy_solve(candidate_set_dict, item_count):
+    """
+    Solve greedy by using the ratio cost/len_of_cover_region.
+    """
+    solution = [0] * len(candidate_set_dict)
+    covered = set()
+
+    cost_region_ratio_dict = {}
+    for s in candidate_set_dict.values():
+        cost_region_ratio_dict[s.index] = s.cost / len(s.items)
+
+    asc_cost_region_ratio_dict = \
+        dict(sorted(cost_region_ratio_dict.items(),
+                    key=lambda item: item[1], reverse=False))
+    for index, _ in asc_cost_region_ratio_dict.items():
+        solution[index] = 1
+        curr_set = candidate_set_dict[index]
+        covered = covered.union(curr_set.items)
+        if len(covered) >= item_count:
+            break
+    return solution
 
 
 def solve_it(input_data):
-    # Modify this code to run your optimization algorithm
-
-    # parse the input
     lines = input_data.split('\n')
 
-    parts = lines[0].split()
-    item_count = int(parts[0])
-    set_count = int(parts[1])
-
-    sets = []
-    for i in range(1, set_count+1):
-        parts = lines[i].split()
-        sets.append(Set(i-1, float(parts[0]), map(int, parts[1:])))
-
-    # build a trivial solution
-    # pick add sets one-by-one until all the items are covered
-    solution = [0]*set_count
-    covered = set()
-
-    for s in sets:
-        solution[s.index] = 1
-        covered |= set(s.items)
-        if len(covered) >= item_count:
-            break
+    item_count = int(lines[0].split()[0])
+    candidate_set_dict = convert_to_candidate_set_dict(lines)
+    solution = greedy_solve(candidate_set_dict, item_count)
 
     # calculate the cost of the solution
-    obj = sum([s.cost*solution[s.index] for s in sets])
+    obj = sum([s.cost*solution[s.index] for s in candidate_set_dict.values()])
 
     # prepare the solution in the specified output format
     output_data = str(obj) + ' ' + str(0) + '\n'
@@ -68,10 +86,15 @@ def solve_it(input_data):
 
 
 if __name__ == '__main__':
-    if len(sys.argv) > 1:
-        file_location = sys.argv[1].strip()
-        with open(file_location, 'r') as input_data_file:
-            input_data = input_data_file.read()
-        print(solve_it(input_data))
-    else:
-        print('This test requires an input file.  Please select one from the data directory. (i.e. python solver.py ./data/sc_6_1)')
+    # if len(sys.argv) > 1:
+    #     file_location = sys.argv[1].strip()
+    #     with open(file_location, 'r') as input_data_file:
+    #         input_data = input_data_file.read()
+    #     print(solve_it(input_data))
+    # else:
+    #     print('This test requires an input file.  Please select one from the data directory. (i.e. python solver.py ./data/sc_6_1)')
+
+    file_location = '.\\data\\sc_6_1'
+    with open(file_location, 'r') as input_data_file:
+        input_data = input_data_file.read()
+    print(solve_it(input_data))
