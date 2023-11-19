@@ -25,7 +25,7 @@
 
 
 # import sys
-from greedy_solve import cost_first_second_length_greedy_solve
+# from greedy_solve import cost_first_second_length_greedy_solve
 from collections import namedtuple, defaultdict
 
 MySet = namedtuple("MySet", ['index', 'cost', 'items'])
@@ -88,14 +88,51 @@ def remove_duplicate_solution(solution, candidate_set_dict):
                 item_occurance_count_dict[item] -= 1
 
 
+def make_item_to_included_set_dict(
+        item_count, candidate_set_dict: dict[int, MySet]):
+    item_to_included_set_dict = {}
+    # initialize dict with key as item_index in asc order
+    for item_index in range(item_count):
+        item_to_included_set_dict[item_index] = []
+
+    for curr_set in candidate_set_dict.values():
+        for item_index in curr_set.items:
+            item_to_included_set_dict[item_index].append(curr_set)
+    return item_to_included_set_dict
+
+
+def dummy_cp_solve(item_to_included_set_dict, candidate_set_dict):
+    item_count = len(item_to_included_set_dict)
+    solution = [0] * len(candidate_set_dict)
+    item_selected_list = [0] * item_count
+
+    for i in range(item_count):
+        if item_selected_list[i] == 1:
+            continue
+        candidate_sets: list[MySet] = item_to_included_set_dict[i]
+        selected_set = sorted(
+            candidate_sets,
+            key=lambda set: (set.cost, -len(set.items)))[0]
+        solution[selected_set.index] = 1
+        for item in selected_set.items:
+            item_selected_list[item] = 1
+    return solution
+
+
 def solve_it(input_data):
     lines = input_data.split('\n')
 
-    # item_count = int(lines[0].split()[0])
+    item_count = int(lines[0].split()[0])
     candidate_set_dict = convert_to_candidate_set_dict(lines)
 
-    solution = cost_first_second_length_greedy_solve(candidate_set_dict)
+    # solution = cost_first_second_length_greedy_solve(candidate_set_dict)
+    # remove_duplicate_solution(solution, candidate_set_dict)
+
+    item_to_included_set_dict = make_item_to_included_set_dict(
+        item_count, candidate_set_dict)
+    solution = dummy_cp_solve(item_to_included_set_dict, candidate_set_dict)
     remove_duplicate_solution(solution, candidate_set_dict)
+
     # solution = cost_coverage_ratio_greedy_solve(
     #     candidate_set_dict, item_count)
 
