@@ -25,8 +25,8 @@
 
 
 # import sys
-
-from collections import namedtuple
+from greedy_solve import cost_first_second_length_greedy_solve
+from collections import namedtuple, defaultdict
 
 MySet = namedtuple("MySet", ['index', 'cost', 'items'])
 
@@ -49,55 +49,43 @@ def convert_to_candidate_set_dict(lines):
     return set_dict
 
 
-def cost_coverage_ratio_greedy_solve(candidate_set_dict, item_count):
-    """
-    Solve greedy by using the ratio cost/len_of_cover_region.
-    """
-    solution = [0] * len(candidate_set_dict)
-    covered = set()
-
-    cost_region_ratio_dict = {}
-    for s in candidate_set_dict.values():
-        cost_region_ratio_dict[s.index] = s.cost / len(s.items)
-
-    asc_cost_region_ratio_dict = \
-        dict(sorted(cost_region_ratio_dict.items(),
-                    key=lambda item: item[1], reverse=False))
-    for index, _ in asc_cost_region_ratio_dict.items():
-        solution[index] = 1
-        curr_set = candidate_set_dict[index]
-        covered = covered.union(curr_set.items)
-        if len(covered) >= item_count:
-            break
-    return solution
-
-
-def cost_first_second_length_greedy_solve(candidate_set_dict):
-    solution = [0] * len(candidate_set_dict)
-    covered = set()
-
-    cost_to_set_dict = {}
-    for _, my_set in candidate_set_dict.items():
-        if my_set.cost in cost_to_set_dict:
-            cost_to_set_dict[my_set.cost].append(my_set)
-        else:
-            cost_to_set_dict[my_set.cost] = [my_set]
-    asc_cost_to_set_info_dict = dict(
-        sorted(cost_to_set_dict.items(), key=lambda item: item[0]))
-
-    # sort value of asc_cost_to_set_info_dict by items length
-    for _, my_set_list in asc_cost_to_set_info_dict.items():
-        my_set_list.sort(key=lambda my_set: -len(my_set.items))
-
-    # print(asc_cost_to_set_info_dict)
-
-    for _, my_set_list in asc_cost_to_set_info_dict.items():
-        for my_set in my_set_list:
+def remove_duplicate_solution(solution, candidate_set_dict):
+    item_occurance_count_dict = defaultdict(int)
+    for i, selected in enumerate(solution):
+        if selected:
+            my_set = candidate_set_dict[i]
             for item in my_set.items:
-                if item not in covered:
-                    solution[my_set.index] = 1
-                    covered = covered.union(my_set.items)
-    return solution
+                item_occurance_count_dict[item] += 1
+
+    removable_index_candidates = []
+    for i, selected in enumerate(solution):
+        if selected:
+            my_set = candidate_set_dict[i]
+            has_one = False
+            for item in my_set.items:
+                if item_occurance_count_dict[item] == 1:
+                    has_one = True
+                    break
+            if not has_one:
+                removable_index_candidates.append((i))
+
+    removable_index_candidates.sort(
+        key=lambda i: (
+            candidate_set_dict[i].cost, -len(candidate_set_dict[i].items)))
+
+    while len(removable_index_candidates):
+        target_index = removable_index_candidates.pop()
+        target_set = candidate_set_dict[target_index]
+
+        is_removable = True
+        for item in target_set.items:
+            if item_occurance_count_dict[item] == 1:
+                is_removable = False
+                break
+        if is_removable:
+            solution[target_index] = 0
+            for item in target_set.items:
+                item_occurance_count_dict[item] -= 1
 
 
 def solve_it(input_data):
@@ -107,6 +95,7 @@ def solve_it(input_data):
     candidate_set_dict = convert_to_candidate_set_dict(lines)
 
     solution = cost_first_second_length_greedy_solve(candidate_set_dict)
+    remove_duplicate_solution(solution, candidate_set_dict)
     # solution = cost_coverage_ratio_greedy_solve(
     #     candidate_set_dict, item_count)
 
@@ -127,9 +116,9 @@ if __name__ == '__main__':
     #         input_data = input_data_file.read()
     #     print(solve_it(input_data))
     # else:
-    #     print('This test requires an input file.  Please select one from the data directory. (i.e. python solver.py ./data/sc_6_1)')
+    #     print('This test requires an input file.')
 
-    file_location = 'set_cover\\data\\sc_157_0'
+    file_location = 'set_cover\\data\\sc_4000_8'
     with open(file_location, 'r') as input_data_file:
         input_data = input_data_file.read()
     print(solve_it(input_data))
