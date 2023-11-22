@@ -1,3 +1,6 @@
+from my_type import MySet
+
+
 def cost_coverage_ratio_greedy_solve(candidate_set_dict, item_count):
     """
     Solve greedy by using the ratio cost/len_of_cover_region.
@@ -46,4 +49,37 @@ def cost_first_second_length_greedy_solve(candidate_set_dict):
                 if item not in covered:
                     solution[my_set.index] = 1
                     covered = covered.union(my_set.items)
+    return solution
+
+
+def make_item_to_included_set_dict(
+        item_count, candidate_set_dict: dict[int, MySet]):
+    item_to_included_set_dict = {}
+    # initialize dict with key as item_index in asc order
+    for item_index in range(item_count):
+        item_to_included_set_dict[item_index] = []
+
+    for curr_set in candidate_set_dict.values():
+        for item_index in curr_set.items:
+            item_to_included_set_dict[item_index].append(curr_set)
+    return item_to_included_set_dict
+
+
+def included_set_cost_first_solve(
+        item_count, candidate_set_dict: dict[int, MySet]):
+    item_to_included_set_dict = \
+        make_item_to_included_set_dict(item_count, candidate_set_dict)
+    solution = [0] * len(candidate_set_dict)
+    item_selected_list = [0] * item_count
+
+    for i in range(item_count):
+        if item_selected_list[i] == 1:
+            continue
+        candidate_sets = item_to_included_set_dict[i]
+        selected_set = sorted(
+            candidate_sets,
+            key=lambda set: (set.cost, -len(set.items)))[0]
+        solution[selected_set.index] = 1
+        for item in selected_set.items:
+            item_selected_list[item] = 1
     return solution
