@@ -24,9 +24,11 @@
 # THE SOFTWARE.
 
 
+import time
 # import sys
-# from cp_solve import dummy_solve
-from greedy_solve import included_set_cost_first_solve
+from branch_and_bound_solve import item_bound_solve
+from greedy_solve import \
+    included_set_cost_first_solve, make_item_to_included_set_dict
 from collections import defaultdict
 
 from my_type import MySet
@@ -90,17 +92,27 @@ def remove_duplicate_solution(solution, candidate_set_dict):
 
 
 def solve_it(input_data):
-    lines = input_data.split('\n')
+    # start timer
+    start_time = time.time()
 
+    lines = input_data.split('\n')
     item_count = int(lines[0].split()[0])
+
     candidate_set_dict = convert_to_candidate_set_dict(lines)
 
-    # solution = cost_first_second_length_greedy_solve(candidate_set_dict)
-    # remove_duplicate_solution(solution, candidate_set_dict)
+    item_to_included_set_dict = make_item_to_included_set_dict(
+        item_count, candidate_set_dict)
 
-    # solution = dummy_solve(candidate_set_dict, item_to_included_set_dict)
-    solution = included_set_cost_first_solve(item_count, candidate_set_dict)
-    # remove_duplicate_solution(solution, candidate_set_dict)
+    greedy_best_solution = included_set_cost_first_solve(
+        item_count, candidate_set_dict)
+    solution = remove_duplicate_solution(
+        greedy_best_solution, candidate_set_dict)
+
+    if item_count < 200:  # use branch and bound if item count is small
+        solution = item_bound_solve(
+            candidate_set_dict,
+            item_to_included_set_dict,
+            greedy_best_solution)
 
     # calculate the cost of the solution
     obj = sum([s.cost*solution[s.index] for s in candidate_set_dict.values()])
@@ -108,6 +120,8 @@ def solve_it(input_data):
     # prepare the solution in the specified output format
     output_data = str(obj) + ' ' + str(0) + '\n'
     output_data += ' '.join(map(str, solution))
+
+    print("--- %s seconds ---" % (round(time.time() - start_time)))
 
     return output_data
 
@@ -121,7 +135,8 @@ if __name__ == '__main__':
     # else:
     #     print('This test requires an input file.')
 
-    file_location = 'data\\sc_6_1'
+    # file_location = 'data\\sc_27_0'
+    file_location = 'data\\sc_27_0'
     with open(file_location, 'r') as input_data_file:
         input_data = input_data_file.read()
     print(solve_it(input_data))
